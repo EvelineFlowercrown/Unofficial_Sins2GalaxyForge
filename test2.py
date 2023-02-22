@@ -24,8 +24,11 @@ font = pygame.font.SysFont(None, 20)
 coordinates_surface = pygame.Surface((200, 20))
 coordinates_surface.fill((255, 255, 255))
 
+MousePositionOnGrid = ""
+
+
 # Load icons
-ICON_SIZE = 40
+ICON_SIZE = 64
 icons = {}
 for filename in os.listdir('icons'):
     if filename.endswith('.png'):
@@ -65,9 +68,12 @@ def readGalaxyChart():
     return planetlisttemp
 
 
+planetlist = readGalaxyChart()
+
+
 def getStarPosition():
     global planetlist
-    
+    return planetlist[0][1]
 
 
 # Initialize scale and offset
@@ -107,26 +113,22 @@ def draw_planetlist(planetlist):
     pygame.display.flip()
 
 
-planetlist = readGalaxyChart()
-
-# Main game loop
+# Event loop
 running = True
 while running:
+    # Handle events
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
         elif event.type == pygame.VIDEORESIZE:
-            screen_width, screen_height = event.w, event.h
-            screen = pygame.display.set_mode((screen_width, screen_height), pygame.RESIZABLE)
-            # Redraw planets after resizing window
-            draw_planetlist(planetlist)
+            screen = pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE)
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 2:
                 start_pos = pygame.mouse.get_pos()
-            elif event.button == 5:
-                scale /= 1.1
             elif event.button == 4:
                 scale *= 1.1
+            elif event.button == 5:
+                scale /= 1.1
         elif event.type == pygame.MOUSEMOTION and event.buttons[1]:
             dx, dy = event.rel
             offset[0] += dx / scale
@@ -136,9 +138,24 @@ while running:
                 end_pos = pygame.mouse.get_pos()
                 offset[0] += end_pos[0] - start_pos[0]
                 offset[1] += end_pos[1] - start_pos[1]
-        # Update the display after each event
-        draw_planetlist(planetlist)
-        pygame.display.update()
+        elif event.type == pygame.MOUSEMOTION:
+            mouse_pos = screen_to_grid(pygame.mouse.get_pos())
+            MousePositionOnGrid = f"Cursor Position: ({mouse_pos[0]:.2f}, {mouse_pos[1]:.2f})"
+
+    # Clear screen
+    screen.fill((0, 0, 0))
+
+    # Draw planets
+    draw_planetlist(planetlist)
+
+    # Draw MousePositionOnGrid text
+    status_surface = font.render(MousePositionOnGrid, True, (0, 0, 0))
+    status_rect = status_surface.get_rect()
+    status_rect.topleft = (10, screen.get_height() - status_rect.height - 10)
+    screen.blit(status_surface, status_rect)
+
+    # Update display
+    pygame.display.update()
 
 # Clean up
 pygame.quit()
