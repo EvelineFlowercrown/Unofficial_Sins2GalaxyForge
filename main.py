@@ -1,7 +1,8 @@
 import os
 import pygame
-from pygame.locals import QUIT
 import json
+import easygui
+
 
 class GalaxyForge:
     def __init__(self):
@@ -9,36 +10,49 @@ class GalaxyForge:
         # Initialize Pygame
         pygame.init()
 
-        #list of planets to be displayed. [[id,[x,y],planettype, id of parent node]]
+        # list of planets to be displayed. [[id,[x,y],planet-type, id of parent node]]
+        self.galaxy_chart = "galaxy_chart.json"
         self.planetlist = self.readGalaxyChart()
 
-        #load Icons
+        # load Icons
         self.icons = self.loadIcons()
         self.ICON_SIZE = 64
 
-        #setting up screen
+        # setting up screen
         self.WIDTH = 1280
         self.HEIGHT = 720
         self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT), pygame.RESIZABLE)
         pygame.display.set_caption('Alpha Forge')
 
-        #Zoom and Drag numbers
+        # Zoom and Drag numbers
         self.scale = 1
-        self.offset = [0,0]
+        self.offset = [0, 0]
         size = int(20 * self.scale)
         self.font = pygame.font.SysFont(None, size * 2)
         self.MousePositionOnGrid = ""
         self.running = True
         self.last_click_pos = None
         self.last_click_time = 0
+        self.highestID = 0
 
-        #Run the Game
+        # Run the Game
+        self.getHighestID()
         self.gameLoop()
 
+    def getHighestID(self):
+        # Load JSON data from file
+        with open(self.galaxy_chart) as file:
+            galaxyChart = json.load(file)
+        for node in galaxyChart['root_nodes']:
+            if node['id'] > self.highestID:
+                self.highestID = node['id']
+        for node in galaxyChart['phase_lanes']:
+            if node['id'] > self.highestID:
+                self.highestID = node['id']
 
     def readGalaxyChart(self):
         # Load JSON data from file
-        with open('galaxy_chart.json') as file:
+        with open(self.galaxy_chart) as file:
             galaxyChart = json.load(file)
 
         # Find the element with id 0
@@ -67,19 +81,20 @@ class GalaxyForge:
                         [grandchild_node_id, grandchild_node_position, grandchild_node_filling_name, child_node_id])
         return planetlisttemp
 
-    def loadIcons(self):
+    @staticmethod
+    def loadIcons():
         # Load icons
         ICON_SIZE = 64
         icons = {}
         for filename in os.listdir('icons'):
             if filename.endswith('.png'):
                 name = os.path.splitext(filename)[0]
-                icons[name] = pygame.transform.scale(pygame.image.load(os.path.join('icons', filename)),(ICON_SIZE, ICON_SIZE))
+                icons[name] = pygame.transform.scale(pygame.image.load(os.path.join('icons', filename)),
+                                                     (ICON_SIZE, ICON_SIZE))
         return icons
 
     def eventhandler(self, events):
         for event in events:
-
             # Quit Game
             if event.type == pygame.QUIT:
                 self.running = False
@@ -90,24 +105,22 @@ class GalaxyForge:
 
             # Mouse inputs
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                #Middleclick Pressed
-                if event.button == 2:
-                    start_pos = pygame.mouse.get_pos()
-                elif event.button == 4:
+                # Middleclick Pressed
+                if event.button == 4:
                     self.scale *= 1.1
                 elif event.button == 5:
                     self.scale /= 1.1
-                # Double-click
-                elif event.button == 1 and event.type == pygame.MOUSEBUTTONUP and event.pos == self.last_click_pos and pygame.time.get_ticks() - self.last_click_time < 500:
-                    # Open popup dialogue
-                    popup_text = "Hello, World!"
-                    popup_font = pygame.font.SysFont(None, 24)
-                    popup_text_surf = popup_font.render(popup_text, True, (255, 255, 255))
-                    popup_rect = popup_text_surf.get_rect(center=event.pos)
-                    pygame.draw.rect(self.screen, (128, 128, 128), popup_rect.inflate(10, 10))
-                    self.screen.blit(popup_text_surf, popup_text_surf.get_rect(center=popup_rect.center))
-                    pygame.display.flip()
+                elif event.button == 1 and pygame.mouse.get_pressed()[0]:
+                    # Check for double-click
+                    if pygame.time.get_ticks() - self.last_click_time < 500 and self.last_click_pos == event.pos:
+                        # Open popup dialogue
+                        x, y = self.last_click_pos
+                        self.PlanetPopup(x, y)
 
+                    else:
+                        # Store the last click position and time
+                        self.last_click_pos = event.pos
+                        self.last_click_time = pygame.time.get_ticks()
 
             elif event.type == pygame.MOUSEMOTION and event.buttons[1]:
                 dx, dy = event.rel
@@ -142,7 +155,7 @@ class GalaxyForge:
         # Clean up
         pygame.quit()
 
-    def screen_to_grid(self,screen_pos):
+    def screen_to_grid(self, screen_pos):
         x, y = screen_pos
 
         x00offset = (self.screen.get_width() // 2)
@@ -155,7 +168,6 @@ class GalaxyForge:
     def draw_planetlist(self):
 
         # Define some colors
-        WHITE = (255, 255, 255)
         GRAY = (128, 128, 128)
         DARK_GRAY = (64, 64, 64)
         BLACK = (0, 0, 0)
@@ -164,15 +176,15 @@ class GalaxyForge:
         for planet in self.planetlist:
             x, y = planet[1]
             icon_name = planet[2]
-            parent_node = planet[3]
+            # parent_node = planet[3]
             icon = self.icons.get(icon_name, None)
             if icon is not None:
-                #Icon Scaling
+                # Icon Scaling
                 size = int(self.ICON_SIZE * self.scale)
                 icon = pygame.transform.scale(icon, (size, size))
 
-                #calculate planet position on sceen
-                center = [0,0]
+                # calculate planet position on sceen
+                center = [0, 0]
 
                 x00offset = (self.screen.get_width() // 2)
                 y00offset = (self.screen.get_height() // 2)
@@ -180,20 +192,64 @@ class GalaxyForge:
                 center[0] = int(x * self.scale + x00offset + self.offset[0])
                 center[1] = int(y * self.scale + y00offset + self.offset[1])
 
-                #get a rectangle centered on the spot the planet should be at
+                # get a rectangle centered on the spot the planet should be at
                 rect = icon.get_rect(center=((center[0]), (center[1])))
 
-                #stick the icon on the rectangle
+                # stick the icon on the rectangle
                 self.screen.blit(icon, rect)
             else:
                 size = int(20 * self.scale)
-                pygame.draw.circle(self.screen, GRAY, (int((x + self.offset[0]) * self.scale), int((y + self.offset[1]) * self.scale)), size)
+                pygame.draw.circle(self.screen, GRAY,
+                                   (int((x + self.offset[0]) * self.scale), int((y + self.offset[1]) * self.scale)),
+                                   size)
                 text = self.font.render('?', True, DARK_GRAY)
-                rect = text.get_rect(center=(int((x + self.offset[0]) * self.scale), int((y + self.offset[1]) * self.scale)))
+                rect = text.get_rect(
+                    center=(int((x + self.offset[0]) * self.scale), int((y + self.offset[1]) * self.scale)))
                 self.screen.blit(text, rect)
         pygame.display.flip()
 
+    def PlanetPopup(self, x, y):
+        planet_types = ['gas_giant_planet', 'random_home_ice_volcanic_planet', 'random_moon_planet',
+                        'random_fair_planet', 'random_poor_planet', 'random_rich_planet',
+                        'random_asteroid_line_cluster', 'player_home_planet', 'random_asteroid']
+        title = 'Choose a planet type to add:'
+        choice = easygui.choicebox(msg=title, title='Planet Type', choices=planet_types, preselect=0)
 
+        if choice:
+            if choice == 'cancel':
+                return
+            else:
+                newID = self.highestID + 1
+                planet = [newID, [x, y], choice, 0]
+                appender = JSONAppender(self.galaxy_chart)
+                appender.prepareAppend(planet)
+
+
+class JSONAppender:
+    def __init__(self, galaxy_chart):
+        with open(galaxy_chart, 'r') as f:
+            self.data = json.load(f)
+        self.galaxy_chart = galaxy_chart
+
+    def append(self, new_node, parent_id):
+        pid = int(parent_id)
+        parent_element = next(node for node in self.data['root_nodes'] if node['id'] == pid)
+        if 'child_nodes' not in parent_element:
+            parent_element['child_nodes'] = []
+        parent_element['child_nodes'].append(new_node)
+        with open(self.galaxy_chart, 'w') as f:
+            json.dump(self.data, f, indent=4)
+
+    def prepareAppend(self, planet):
+        planetId = planet[0]
+        position = planet[1]
+        filling_name = planet[2]
+        parent_node = planet[3]
+
+        # Create a new child node
+        new_node = {"id": planetId, "filling_name": filling_name, "position": position}
+        print(f"Adding new node: {new_node}")
+        self.append(new_node, parent_node)
 
 
 gf = GalaxyForge()
