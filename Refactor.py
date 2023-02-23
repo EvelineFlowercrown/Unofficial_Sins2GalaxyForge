@@ -2,8 +2,7 @@ import os
 import pygame
 from pygame.locals import QUIT
 import json
-import tkinter as tk
-from tkinter import ttk
+import easygui
 
 class GalaxyForge:
     def __init__(self):
@@ -103,7 +102,8 @@ class GalaxyForge:
                     if pygame.time.get_ticks() - self.last_click_time < 500 and self.last_click_pos == event.pos:
                         # Open popup dialogue
                         x,y = self.last_click_pos
-                        PlanetPopup(x, y)
+                        self.PlanetPopup(x,y)
+
                     else:
                         # Store the last click position and time
                         self.last_click_pos = event.pos
@@ -193,43 +193,19 @@ class GalaxyForge:
                 self.screen.blit(text, rect)
         pygame.display.flip()
 
+    def PlanetPopup(self,x, y):
+        planet_types = ['gas_giant_planet', 'random_home_ice_volcanic_planet', 'random_moon_planet',
+                        'random_fair_planet', 'random_poor_planet', 'random_rich_planet',
+                        'random_asteroid_line_cluster', 'player_home_planet', 'random_asteroid']
+        title = 'Choose a planet type to add:'
+        choice = easygui.choicebox(msg=title, title='Planet Type', choices=planet_types, preselect=0)
 
-
-
-class PlanetPopup:
-    def __init__(self, x, y):
-        # Set up Tkinter root window
-        super().__init__()
-        self.root = tk.Tk()
-        self.root.geometry(f"+{x}+{y}")
-        self.root.title("Planet Details")
-        self.show_dialog()
-
-    def show_dialog(self):
-        # Create a Tkinter toplevel window for the dialog
-        dialog = tk.Toplevel(self.root)
-        # Add widgets to the dialog
-        label = ttk.Label(dialog, text="Choose a planet type to add:")
-        label.pack()
-        planet_types = ["gas_giant_planet", "random_home_ice_volcanic_planet", "random_moon_planet",
-                        "random_fair_planet", "random_poor_planet", "random_rich_planet",
-                        "random_asteroid_line_cluster", "player_home_planet", "random_asteroid"]
-        planet_type_var = tk.StringVar(value=planet_types[0])
-        planet_type_dropdown = ttk.Combobox(dialog, textvariable=planet_type_var, values=planet_types)
-        planet_type_dropdown.pack()
-        def on_cancel():
-            dialog.destroy()
-        def on_add_planet():
-            planet_type = planet_type_var.get()
-            print(f"Chosen planet type: {planet_type}")
-            print(f"Position: {x},{y}")
-            dialog.destroy()
-        cancel_button = ttk.Button(dialog, text="Cancel", command=on_cancel)
-        add_planet_button = ttk.Button(dialog, text="Add planet", command=on_add_planet)
-        cancel_button.pack(side="left")
-        add_planet_button.pack(side="right")
-        # Run the Tkinter event loop until the dialog is closed
-        dialog.mainloop()
+        if choice:
+            if choice == 'cancel':
+                return
+            else:
+                print(f"Chosen planet type: {choice}")
+                print(f"Position of double click: ({x}, {y})")
 
 
 
