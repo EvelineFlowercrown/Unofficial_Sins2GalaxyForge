@@ -105,7 +105,7 @@ class GalaxyForge:
             # MouseMovement
             elif event.type == pygame.MOUSEMOTION:
                 mouse_pos = self.screen_to_grid(pygame.mouse.get_pos())
-                self.MousePositionOnGrid = f"Cursor Position: ({mouse_pos[0]:.2f}, {mouse_pos[1]:.2f})"
+                self.MousePositionOnGrid = f"Grid: ({mouse_pos[0]:.2f}, {mouse_pos[1]:.2f}) Screen: {pygame.mouse.get_pos()}"
 
     def gameLoop(self):
         while self.running:
@@ -133,11 +133,11 @@ class GalaxyForge:
     def screen_to_grid(self,screen_pos):
         x, y = screen_pos
 
-        x00offset = (self.screen.get_width() // 2) * self.scale
-        y00offset = (self.screen.get_height() // 2) * self.scale
+        x00offset = (self.screen.get_width() // 2)
+        y00offset = (self.screen.get_height() // 2)
 
-        y = int((y - y00offset - self.offset[1]) * self.scale)
-        x = int((x - x00offset - self.offset[0]) * self.scale)
+        y = int((y - y00offset - self.offset[1]) / self.scale)
+        x = int((x - x00offset - self.offset[0]) / self.scale)
         return x, y
 
     def draw_planetlist(self):
@@ -160,11 +160,11 @@ class GalaxyForge:
                 icon = pygame.transform.scale(icon, (size, size))
 
                 #calculate planet position on sceen
-                x00offset = (self.screen.get_width() // 2)* self.scale
-                y00offset = (self.screen.get_height() // 2) * self.scale
+                x00offset = (self.screen.get_width() // 2)
+                y00offset = (self.screen.get_height() // 2)
 
                 #get a rectangle centered on the spot the planet should be at
-                rect = icon.get_rect(center=(int((x + x00offset + self.offset[0]) * self.scale), int((y + y00offset + self.offset[1]) * self.scale)))
+                rect = icon.get_rect(center=(int(x * self.scale + x00offset + self.offset[0]), int(y * self.scale + y00offset + self.offset[1]) ))
 
                 #stick the icon on the rectangle
                 self.screen.blit(icon, rect)
