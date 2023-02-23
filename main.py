@@ -12,6 +12,7 @@ class GalaxyForge:
 
         # list of planets to be displayed. [[id,[x,y],planet-type, id of parent node]]
         self.galaxy_chart = "galaxy_chart.json"
+        self.phaselanes = self.readPhaseLanes()
         self.planetlist = self.readGalaxyChart()
 
         # load Icons
@@ -47,17 +48,26 @@ class GalaxyForge:
         for node in element_0['child_nodes']:
             if node['id'] > self.highestID:
                 self.highestID = node['id']
-                print(f"{node['id']} > {self.highestID}")
-            else:
-                print(f"{node['id']} < {self.highestID}")
-        print(f"highest id: {self.highestID}")
+                # print(f"{node['id']} > {self.highestID}")
+            # else:
+            # print(f"{node['id']} < {self.highestID}")
+        # print(f"highest id: {self.highestID}")
         for node in galaxyChart['phase_lanes']:
             if node['id'] > self.highestID:
                 self.highestID = node['id']
-                print(f"{node['id']} > {self.highestID}")
-            else:
-                print(f"{node['id']} < {self.highestID}")
-        print(f"highest id: {self.highestID}")
+                # print(f"{node['id']} > {self.highestID}")
+            # else:
+            # print(f"{node['id']} < {self.highestID}")
+        # print(f"highest id: {self.highestID}")
+
+    def readPhaseLanes(self):
+        # Load JSON data from file
+        phaselanes = []
+        with open(self.galaxy_chart) as file:
+            galaxyChart = json.load(file)
+        for node in galaxyChart['phase_lanes']:
+            phaselanes.append([node['node_a'], node['node_b']])
+        return phaselanes
 
     def readGalaxyChart(self):
         # Load JSON data from file
@@ -71,13 +81,23 @@ class GalaxyForge:
 
         # Create planet list
         planetlisttemp = [[0, sunPosition, sunType, 0]]
-
+        for lane in self.phaselanes:
+            if lane[0] == 0:
+                lane[0] = sunPosition
+            if lane[1] == 0:
+                lane[1] = sunPosition
         # Get the id and position of every child node of element 0
         for child_node in element_0['child_nodes']:
-            #print(child_node)
+            # print(child_node)
             child_node_id = child_node['id']
             child_node_position = child_node['position']
             child_node_filling_name = child_node['filling_name']
+
+            for lane in self.phaselanes:
+                if lane[0] == child_node_id:
+                    lane[0] = child_node_position
+                if lane[1] == child_node_id:
+                    lane[1] = child_node_position
 
             planetlisttemp.append([child_node_id, child_node_position, child_node_filling_name, 0])
 
@@ -89,6 +109,11 @@ class GalaxyForge:
 
                     planetlisttemp.append(
                         [grandchild_node_id, grandchild_node_position, grandchild_node_filling_name, child_node_id])
+                    for lane in self.phaselanes:
+                        if lane[0] == grandchild_node_id:
+                            lane[0] = grandchild_node_position
+                        if lane[1] == grandchild_node_id:
+                            lane[1] = grandchild_node_position
         return planetlisttemp
 
     @staticmethod
@@ -181,8 +206,25 @@ class GalaxyForge:
         GRAY = (128, 128, 128)
         DARK_GRAY = (64, 64, 64)
         BLACK = (0, 0, 0)
+        OFFWHITE = (155, 155, 155)
+
+        x00offset = (self.screen.get_width() // 2)
+        y00offset = (self.screen.get_height() // 2)
 
         self.screen.fill(BLACK)
+
+        # Draw phase lanes
+        for lane in self.phaselanes:
+            start = lane[0]
+            end = lane[1]
+
+            startX = int(start[0] * self.scale + x00offset + self.offset[0])
+            endX = int(end[0] * self.scale + x00offset + self.offset[0])
+            startY = int(start[1] * self.scale + y00offset + self.offset[1])
+            endY = int(end[1] * self.scale + y00offset + self.offset[1])
+
+            pygame.draw.line(self.screen, OFFWHITE, (startX, endX), (startY, endY), 1)
+
         for planet in self.planetlist:
             x, y = planet[1]
             icon_name = planet[2]
@@ -195,9 +237,6 @@ class GalaxyForge:
 
                 # calculate planet position on sceen
                 center = [0, 0]
-
-                x00offset = (self.screen.get_width() // 2)
-                y00offset = (self.screen.get_height() // 2)
 
                 center[0] = int(x * self.scale + x00offset + self.offset[0])
                 center[1] = int(y * self.scale + y00offset + self.offset[1])
@@ -216,6 +255,8 @@ class GalaxyForge:
                 rect = text.get_rect(
                     center=(int((x + self.offset[0]) * self.scale), int((y + self.offset[1]) * self.scale)))
                 self.screen.blit(text, rect)
+
+
         pygame.display.flip()
 
     def PlanetPopup(self, x, y):
