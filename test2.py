@@ -1,50 +1,54 @@
 import pygame
+import tkinter as tk
+from tkinter import ttk
 
-class InfiniteGrid:
-    def __init__(self, cell_size=10, bg_color=(255, 255, 255)):
-        self.cell_size = cell_size
-        self.bg_color = bg_color
-        self.screen = pygame.display.set_mode((800, 600), pygame.RESIZABLE)
-        self.cells = {}
-        self.camera_x = 0
-        self.camera_y = 0
+pygame.init()
 
-        # Initialize the red center cell at (0, 0)
-        self.cells[(0, 0)] = pygame.Rect(0, 0, self.cell_size, self.cell_size)
+# Set up Pygame screen
+screen_width = 640
+screen_height = 480
+screen = pygame.display.set_mode((screen_width, screen_height))
 
-    def run(self):
-        while True:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    quit()
-                elif event.type == pygame.VIDEORESIZE:
-                    self.screen = pygame.display.set_mode(event.size, pygame.RESIZABLE)
+# Set up Tkinter root window
+root = tk.Tk()
+root.withdraw()
 
-            self.screen.fill(self.bg_color)
+def show_dialog():
+    # Create a Tkinter toplevel window for the dialog
+    dialog = tk.Toplevel(root)
 
-            # Calculate the cell position of the camera
-            cell_x = self.camera_x // self.cell_size
-            cell_y = self.camera_y // self.cell_size
+    # Add widgets to the dialog
+    label = ttk.Label(dialog, text="Choose a planet type to add:")
+    label.pack()
 
-            # Center the camera on the (0, 0) cell
-            screen_width, screen_height = self.screen.get_size()
-            self.camera_x = screen_width // 2 - self.cell_size // 2 - cell_x * self.cell_size
-            self.camera_y = screen_height // 2 - self.cell_size // 2 - cell_y * self.cell_size
+    planet_types = ["gas_giant_planet", "random_home_ice_volcanic_planet", "random_moon_planet", "random_fair_planet", "random_poor_planet", "random_rich_planet", "random_asteroid_line_cluster", "player_home_planet", "random_asteroid"]
+    planet_type_var = tk.StringVar(value=planet_types[0])
+    planet_type_dropdown = ttk.Combobox(dialog, textvariable=planet_type_var, values=planet_types)
+    planet_type_dropdown.pack()
 
-            # Draw the cells in the camera's view
-            for x in range(cell_x - 20, cell_x + 20):
-                for y in range(cell_y - 15, cell_y + 15):
-                    if (x, y) not in self.cells:
-                        self.cells[(x, y)] = pygame.Rect(x * self.cell_size, y * self.cell_size, self.cell_size, self.cell_size)
-                    color = (255, 0, 0) if x == 0 and y == 0 else (0, 0, 0)
-                    pygame.draw.rect(self.screen, color, self.cells[(x, y)], 1)
+    def on_cancel():
+        dialog.destroy()
 
-            pygame.display.update()
+    def on_add_planet():
+        planet_type = planet_type_var.get()
+        print(f"Chosen planet type: {planet_type}")
+        print(f"Position of double click: {pygame.mouse.get_pos()}")
+        dialog.destroy()
 
-if __name__ == '__main__':
-    pygame.init()
-    grid = InfiniteGrid()
-    grid.run()
-    pygame.quit()
+    cancel_button = ttk.Button(dialog, text="Cancel", command=on_cancel)
+    add_planet_button = ttk.Button(dialog, text="Add planet", command=on_add_planet)
+    cancel_button.pack(side="left")
+    add_planet_button.pack(side="right")
 
+    # Run the Tkinter event loop until the dialog is closed
+    dialog.mainloop()
+
+show_dialog()
+
+# Pygame event loop
+while True:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            exit()
+    pygame.display.update()

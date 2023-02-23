@@ -2,6 +2,8 @@ import os
 import pygame
 from pygame.locals import QUIT
 import json
+import tkinter as tk
+from tkinter import ttk
 
 class GalaxyForge:
     def __init__(self):
@@ -29,6 +31,8 @@ class GalaxyForge:
         self.font = pygame.font.SysFont(None, size * 2)
         self.MousePositionOnGrid = ""
         self.running = True
+        self.last_click_pos = None
+        self.last_click_time = 0
 
         #Run the Game
         self.gameLoop()
@@ -77,7 +81,6 @@ class GalaxyForge:
 
     def eventhandler(self, events):
         for event in events:
-
             # Quit Game
             if event.type == pygame.QUIT:
                 self.running = False
@@ -88,14 +91,23 @@ class GalaxyForge:
 
             # Mouse inputs
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                #Middleclick Pressed
+                # Middleclick Pressed
                 if event.button == 2:
                     start_pos = pygame.mouse.get_pos()
                 elif event.button == 4:
                     self.scale *= 1.1
                 elif event.button == 5:
                     self.scale /= 1.1
-
+                elif event.button == 1 and pygame.mouse.get_pressed()[0]:
+                    # Check for double-click
+                    if pygame.time.get_ticks() - self.last_click_time < 500 and self.last_click_pos == event.pos:
+                        # Open popup dialogue
+                        x,y = self.last_click_pos
+                        PlanetPopup(x, y)
+                    else:
+                        # Store the last click position and time
+                        self.last_click_pos = event.pos
+                        self.last_click_time = pygame.time.get_ticks()
 
             elif event.type == pygame.MOUSEMOTION and event.buttons[1]:
                 dx, dy = event.rel
@@ -160,22 +172,64 @@ class GalaxyForge:
                 icon = pygame.transform.scale(icon, (size, size))
 
                 #calculate planet position on sceen
+                center = [0,0]
+
                 x00offset = (self.screen.get_width() // 2)
                 y00offset = (self.screen.get_height() // 2)
 
+                center[0] = int(x * self.scale + x00offset + self.offset[0])
+                center[1] = int(y * self.scale + y00offset + self.offset[1])
+
                 #get a rectangle centered on the spot the planet should be at
-                rect = icon.get_rect(center=(int(x * self.scale + x00offset + self.offset[0]), int(y * self.scale + y00offset + self.offset[1]) ))
+                rect = icon.get_rect(center=((center[0]), (center[1])))
 
                 #stick the icon on the rectangle
                 self.screen.blit(icon, rect)
             else:
                 size = int(20 * self.scale)
-                pygame.draw.circle(screen, GRAY, (int((x + self.offset[0]) * self.scale), int((y + self.offset[1]) * self.scale)), size)
+                pygame.draw.circle(self.screen, GRAY, (int((x + self.offset[0]) * self.scale), int((y + self.offset[1]) * self.scale)), size)
                 text = self.font.render('?', True, DARK_GRAY)
                 rect = text.get_rect(center=(int((x + self.offset[0]) * self.scale), int((y + self.offset[1]) * self.scale)))
                 self.screen.blit(text, rect)
         pygame.display.flip()
 
+
+
+
+class PlanetPopup:
+    def __init__(self, x, y):
+        # Set up Tkinter root window
+        super().__init__()
+        self.root = tk.Tk()
+        self.root.geometry(f"+{x}+{y}")
+        self.root.title("Planet Details")
+        self.show_dialog()
+
+    def show_dialog(self):
+        # Create a Tkinter toplevel window for the dialog
+        dialog = tk.Toplevel(self.root)
+        # Add widgets to the dialog
+        label = ttk.Label(dialog, text="Choose a planet type to add:")
+        label.pack()
+        planet_types = ["gas_giant_planet", "random_home_ice_volcanic_planet", "random_moon_planet",
+                        "random_fair_planet", "random_poor_planet", "random_rich_planet",
+                        "random_asteroid_line_cluster", "player_home_planet", "random_asteroid"]
+        planet_type_var = tk.StringVar(value=planet_types[0])
+        planet_type_dropdown = ttk.Combobox(dialog, textvariable=planet_type_var, values=planet_types)
+        planet_type_dropdown.pack()
+        def on_cancel():
+            dialog.destroy()
+        def on_add_planet():
+            planet_type = planet_type_var.get()
+            print(f"Chosen planet type: {planet_type}")
+            print(f"Position: {x},{y}")
+            dialog.destroy()
+        cancel_button = ttk.Button(dialog, text="Cancel", command=on_cancel)
+        add_planet_button = ttk.Button(dialog, text="Add planet", command=on_add_planet)
+        cancel_button.pack(side="left")
+        add_planet_button.pack(side="right")
+        # Run the Tkinter event loop until the dialog is closed
+        dialog.mainloop()
 
 
 

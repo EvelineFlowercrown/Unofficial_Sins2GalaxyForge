@@ -1,5 +1,6 @@
 import os
 import pygame
+from pygame.locals import QUIT
 import json
 
 class GalaxyForge:
@@ -28,6 +29,8 @@ class GalaxyForge:
         self.font = pygame.font.SysFont(None, size * 2)
         self.MousePositionOnGrid = ""
         self.running = True
+        self.last_click_pos = None
+        self.last_click_time = 0
 
         #Run the Game
         self.gameLoop()
@@ -94,6 +97,16 @@ class GalaxyForge:
                     self.scale *= 1.1
                 elif event.button == 5:
                     self.scale /= 1.1
+                # Double-click
+                elif event.button == 1 and event.type == pygame.MOUSEBUTTONUP and event.pos == self.last_click_pos and pygame.time.get_ticks() - self.last_click_time < 500:
+                    # Open popup dialogue
+                    popup_text = "Hello, World!"
+                    popup_font = pygame.font.SysFont(None, 24)
+                    popup_text_surf = popup_font.render(popup_text, True, (255, 255, 255))
+                    popup_rect = popup_text_surf.get_rect(center=event.pos)
+                    pygame.draw.rect(self.screen, (128, 128, 128), popup_rect.inflate(10, 10))
+                    self.screen.blit(popup_text_surf, popup_text_surf.get_rect(center=popup_rect.center))
+                    pygame.display.flip()
 
 
             elif event.type == pygame.MOUSEMOTION and event.buttons[1]:
@@ -104,7 +117,7 @@ class GalaxyForge:
             # MouseMovement
             elif event.type == pygame.MOUSEMOTION:
                 mouse_pos = self.screen_to_grid(pygame.mouse.get_pos())
-                self.MousePositionOnGrid = f"Cursor Position: ({mouse_pos[0]:.2f}, {mouse_pos[1]:.2f})"
+                self.MousePositionOnGrid = f"Grid: ({mouse_pos[0]:.2f}, {mouse_pos[1]:.2f}) Screen: {pygame.mouse.get_pos()}"
 
     def gameLoop(self):
         while self.running:
@@ -132,11 +145,11 @@ class GalaxyForge:
     def screen_to_grid(self,screen_pos):
         x, y = screen_pos
 
-        x00offset = (self.screen.get_width() // 2) * self.scale
-        y00offset = (self.screen.get_height() // 2) * self.scale
+        x00offset = (self.screen.get_width() // 2)
+        y00offset = (self.screen.get_height() // 2)
 
-        y = int((y - y00offset - self.offset[1]) * self.scale)
-        x = int((x - x00offset - self.offset[0]) * self.scale)
+        y = int((y - y00offset - self.offset[1]) / self.scale)
+        x = int((x - x00offset - self.offset[0]) / self.scale)
         return x, y
 
     def draw_planetlist(self):
@@ -159,11 +172,16 @@ class GalaxyForge:
                 icon = pygame.transform.scale(icon, (size, size))
 
                 #calculate planet position on sceen
-                x00offset = (self.screen.get_width() // 2)* self.scale
-                y00offset = (self.screen.get_height() // 2) * self.scale
+                center = [0,0]
+
+                x00offset = (self.screen.get_width() // 2)
+                y00offset = (self.screen.get_height() // 2)
+
+                center[0] = int(x * self.scale + x00offset + self.offset[0])
+                center[1] = int(y * self.scale + y00offset + self.offset[1])
 
                 #get a rectangle centered on the spot the planet should be at
-                rect = icon.get_rect(center=(int((x + x00offset + self.offset[0]) * self.scale), int((y + y00offset + self.offset[1]) * self.scale)))
+                rect = icon.get_rect(center=((center[0]), (center[1])))
 
                 #stick the icon on the rectangle
                 self.screen.blit(icon, rect)
