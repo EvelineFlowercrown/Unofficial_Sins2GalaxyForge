@@ -7,8 +7,8 @@ import json
 pygame.init()
 
 # Set up the window
-WIDTH = 800
-HEIGHT = 600
+WIDTH = 1280
+HEIGHT = 720
 screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
 pygame.display.set_caption('Galaxy Chart')
 
@@ -17,17 +17,24 @@ WHITE = (255, 255, 255)
 GRAY = (128, 128, 128)
 DARK_GRAY = (64, 64, 64)
 
+# Create a font object for displaying the position coordinates
+font = pygame.font.SysFont(None, 20)
+
+# Create a new surface for displaying the position coordinates
+coordinates_surface = pygame.Surface((200, 20))
+coordinates_surface.fill((255, 255, 255))
+
+MousePositionOnGrid = ""
+
+
 # Load icons
-ICON_SIZE = 40
+ICON_SIZE = 64
 icons = {}
 for filename in os.listdir('icons'):
     if filename.endswith('.png'):
         name = os.path.splitext(filename)[0]
         icons[name] = pygame.transform.scale(pygame.image.load(os.path.join('icons', filename)), (ICON_SIZE, ICON_SIZE))
 
-# Initialize scale and offset
-scale = 1.0
-offset = [0.0, 0.0]
 
 def readGalaxyChart():
     # Load JSON data from file
@@ -36,9 +43,11 @@ def readGalaxyChart():
 
     # Find the element with id 0
     element_0 = next(node for node in galaxyChart['root_nodes'] if node['id'] == 0)
+    sunPosition = element_0['position']
+    sunType = element_0['filling_name']
 
     # Create planet list
-    planetlist = []
+    planetlisttemp = [[0, sunPosition, sunType, 0]]
 
     # Get the id and position of every child node of element 0
     for child_node in element_0['child_nodes']:
@@ -46,7 +55,7 @@ def readGalaxyChart():
         child_node_position = child_node['position']
         child_node_filling_name = child_node['filling_name']
 
-        planetlist.append([child_node_id, child_node_position, child_node_filling_name, 0])
+        planetlisttemp.append([child_node_id, child_node_position, child_node_filling_name, 0])
 
         if 'child_nodes' in child_node:
             for grandchild_node in child_node['child_nodes']:
@@ -54,8 +63,31 @@ def readGalaxyChart():
                 grandchild_node_position = grandchild_node['position']
                 grandchild_node_filling_name = grandchild_node['filling_name']
 
-                planetlist.append([grandchild_node_id, grandchild_node_position, grandchild_node_filling_name, child_node_id])
-    return planetlist
+                planetlisttemp.append(
+                    [grandchild_node_id, grandchild_node_position, grandchild_node_filling_name, child_node_id])
+    return planetlisttemp
+
+
+planetlist = readGalaxyChart()
+
+
+def getStarPosition():
+    global planetlist
+    return planetlist[0][1]
+
+
+# Initialize scale and offset
+scale = 1.0
+offset = list(getStarPosition())
+
+
+def screen_to_grid(screen_pos):
+    global offset, scale
+    x, y = screen_pos
+    x = (x - screen.get_width() // 2) / scale - offset[0]
+    y = (y - screen.get_height() // 2) / scale - offset[1]
+    return x, y
+
 
 # Function to draw the planet list
 def draw_planetlist(planetlist):
@@ -80,24 +112,23 @@ def draw_planetlist(planetlist):
             screen.blit(text, rect)
     pygame.display.flip()
 
-planetlist = readGalaxyChart()
-
 
 # Event loop
 running = True
 while running:
+    # Handle events
     for event in pygame.event.get():
-        if event.type == QUIT:
+        if event.type == pygame.QUIT:
             running = False
         elif event.type == pygame.VIDEORESIZE:
             screen = pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE)
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 2:
                 start_pos = pygame.mouse.get_pos()
-            elif event.button == 5:
-                scale /= 1.1
             elif event.button == 4:
                 scale *= 1.1
+            elif event.button == 5:
+                scale /= 1.1
         elif event.type == pygame.MOUSEMOTION and event.buttons[1]:
             dx, dy = event.rel
             offset[0] += dx / scale
@@ -107,9 +138,24 @@ while running:
                 end_pos = pygame.mouse.get_pos()
                 offset[0] += end_pos[0] - start_pos[0]
                 offset[1] += end_pos[1] - start_pos[1]
+        elif event.type == pygame.MOUSEMOTION:
+            mouse_pos = screen_to_grid(pygame.mouse.get_pos())
+            MousePositionOnGrid = f"Cursor Position: ({mouse_pos[0]:.2f}, {mouse_pos[1]:.2f})"
 
-    # Draw the planet list
+    # Clear screen
+    screen.fill((0, 0, 0))
+
+    # Draw planets
     draw_planetlist(planetlist)
+
+    # Draw MousePositionOnGrid text
+    status_surface = font.render(MousePositionOnGrid, True, (0, 0, 0))
+    status_rect = status_surface.get_rect()
+    status_rect.topleft = (10, screen.get_height() - status_rect.height - 10)
+    screen.blit(status_surface, status_rect)
+
+    # Update display
+    pygame.display.update()
 
 # Clean up
 pygame.quit()

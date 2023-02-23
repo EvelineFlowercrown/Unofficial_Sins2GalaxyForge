@@ -1,5 +1,6 @@
 import os
 import pygame
+from pygame.locals import QUIT
 import json
 
 class GalaxyForge:
@@ -169,7 +170,7 @@ class GalaxyForge:
                 self.screen.blit(icon, rect)
             else:
                 size = int(20 * self.scale)
-                pygame.draw.circle(self.screen, GRAY, (int((x + self.offset[0]) * self.scale), int((y + self.offset[1]) * self.scale)), size)
+                pygame.draw.circle(screen, GRAY, (int((x + self.offset[0]) * self.scale), int((y + self.offset[1]) * self.scale)), size)
                 text = self.font.render('?', True, DARK_GRAY)
                 rect = text.get_rect(center=(int((x + self.offset[0]) * self.scale), int((y + self.offset[1]) * self.scale)))
                 self.screen.blit(text, rect)
