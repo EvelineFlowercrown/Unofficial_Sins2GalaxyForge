@@ -43,12 +43,21 @@ class GalaxyForge:
         # Load JSON data from file
         with open(self.galaxy_chart) as file:
             galaxyChart = json.load(file)
-        for node in galaxyChart['root_nodes']:
+        element_0 = next(node for node in galaxyChart['root_nodes'] if node['id'] == 0)
+        for node in element_0['child_nodes']:
             if node['id'] > self.highestID:
                 self.highestID = node['id']
+                print(f"{node['id']} > {self.highestID}")
+            else:
+                print(f"{node['id']} < {self.highestID}")
+        print(f"highest id: {self.highestID}")
         for node in galaxyChart['phase_lanes']:
             if node['id'] > self.highestID:
                 self.highestID = node['id']
+                print(f"{node['id']} > {self.highestID}")
+            else:
+                print(f"{node['id']} < {self.highestID}")
+        print(f"highest id: {self.highestID}")
 
     def readGalaxyChart(self):
         # Load JSON data from file
@@ -65,6 +74,7 @@ class GalaxyForge:
 
         # Get the id and position of every child node of element 0
         for child_node in element_0['child_nodes']:
+            #print(child_node)
             child_node_id = child_node['id']
             child_node_position = child_node['position']
             child_node_filling_name = child_node['filling_name']
@@ -114,7 +124,7 @@ class GalaxyForge:
                     # Check for double-click
                     if pygame.time.get_ticks() - self.last_click_time < 500 and self.last_click_pos == event.pos:
                         # Open popup dialogue
-                        x, y = self.last_click_pos
+                        x, y = self.screen_to_grid(self.last_click_pos)
                         self.PlanetPopup(x, y)
 
                     else:
@@ -223,6 +233,7 @@ class GalaxyForge:
                 planet = [newID, [x, y], choice, 0]
                 appender = JSONAppender(self.galaxy_chart)
                 appender.prepareAppend(planet)
+                self.highestID += 1
 
 
 class JSONAppender:
