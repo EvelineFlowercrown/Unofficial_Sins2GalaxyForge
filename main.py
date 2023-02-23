@@ -223,7 +223,7 @@ class GalaxyForge:
             startY = int(start[1] * self.scale + y00offset + self.offset[1])
             endY = int(end[1] * self.scale + y00offset + self.offset[1])
 
-            pygame.draw.line(self.screen, OFFWHITE, (startX, endX), (startY, endY), 1)
+            pygame.draw.line(self.screen, OFFWHITE, (startX, startY), (endX, endY), 1)
 
         for planet in self.planetlist:
             x, y = planet[1]
