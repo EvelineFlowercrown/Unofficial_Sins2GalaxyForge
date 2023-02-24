@@ -1,0 +1,48 @@
+{
+    "version": 1,
+    "overwrite_npc_fillings": true,
+    "npc_fillings": [
+    {
+        "name": "militia",
+        "filling":
+        {
+            "player_definition": "militia",
+            "npc_filling_type": "militia"
+        }
+    },
+    {
+        "name": "guardian",
+        "filling":
+        {
+            "player_definition": "guardian_npc",
+            "npc_filling_type": "guardian"
+        }
+    },
+    {
+        "name": "pirate",
+        "filling":
+        {
+            "player_definition": "pirate_npc",
+            "npc_filling_type": "pirate",
+            "npc_id": "pirate"
+        }
+    },
+    {
+        "name": "npc_merchants",
+        "filling":
+        {
+            "player_definition": "merchants_npc",
+            "npc_filling_type": "faction",
+            "npc_id": "merchants"
+        }
+    },
+    {
+        "name": "npc_miners",
+        "filling":
+        {
+            "player_definition": "miners_npc",
+            "npc_filling_type": "faction",
+            "npc_id": "miners"
+        }
+    }]
+}

@@ -1,0 +1,10 @@
+{
+    "version": 1,
+    "name": "Test",
+    "description": "A Test.",
+    "desired_player_slots_configuration":
+    {
+        "player_count": 4,
+        "team_count": 0
+    }
+}

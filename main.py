@@ -1,4 +1,6 @@
 import os
+import zipfile
+
 import pygame
 import json
 import easygui
@@ -12,7 +14,7 @@ class GalaxyForge:
         pygame.init()
 
         # list of planets to be displayed. [[id,[x,y],planet-type, id of parent node]]
-        self.galaxy_chart = "galaxy_chart.json"
+        self.galaxy_chart = "MapFiles\\galaxy_chart.json"
         self.phaselanes = self.readPhaseLanes()
         self.planetlist = self.readGalaxyChart()
 
@@ -152,7 +154,10 @@ class GalaxyForge:
         new_node = {"id": newID, "node_a": node_a, "node_b": node_b}
         appender = JSONAppender(self.galaxy_chart)
         appender.appendPhaselane(new_node)
-        self.highestID += 1
+        self.control_click = [0, 0]
+        self.getHighestID()
+        self.phaselanes = self.readPhaseLanes()
+        self.planetlist = self.readGalaxyChart()
 
     def eventhandler(self, events):
         for event in events:
@@ -324,7 +329,9 @@ class GalaxyForge:
                 planet = [newID, [x, y], choice, number]
                 appender = JSONAppender(self.galaxy_chart)
                 appender.prepareAppend(planet)
-                self.highestID += 1
+                self.getHighestID()
+                self.phaselanes = self.readPhaseLanes()
+                self.planetlist = self.readGalaxyChart()
 
 
 class JSONAppender:
@@ -357,6 +364,7 @@ class JSONAppender:
         new_node = {"id": planetId, "filling_name": filling_name, "position": position}
         print(f"Adding new node: {new_node}")
         self.append(new_node, parent_node)
+
 
 
 gf = GalaxyForge()
