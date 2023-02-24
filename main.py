@@ -2,6 +2,7 @@ import os
 import pygame
 import json
 import easygui
+import math
 
 
 class GalaxyForge:
@@ -34,6 +35,7 @@ class GalaxyForge:
         self.running = True
         self.last_click_pos = None
         self.last_click_time = 0
+        self.control_click = [0, 0]
         self.highestID = 0
 
         # Run the Game
@@ -128,6 +130,30 @@ class GalaxyForge:
                                                      (ICON_SIZE, ICON_SIZE))
         return icons
 
+    def find_closest_point(self, a, b):
+        min_distance = float('inf')
+        closest_point = None
+
+        for planet in self.planetlist:
+            x, y = planet[1]
+            distance = math.sqrt((x - a) ** 2 + (y - b) ** 2)
+            if distance < min_distance:
+                min_distance = distance
+                closest_id = planet[0]
+
+        return closest_id
+
+    def addPhaseLane(self, pos1, pos2):
+        gridPos1 = self.screen_to_grid(pos1)
+        gridPos2 = self.screen_to_grid(pos2)
+        node_a = self.find_closest_point(gridPos1[0], gridPos1[1])
+        node_b = self.find_closest_point(gridPos2[0], gridPos2[1])
+        newID = self.highestID + 1
+        new_node = {"id": newID, "node_a": node_a, "node_b": node_b}
+        appender = JSONAppender(self.galaxy_chart)
+        appender.appendPhaselane(new_node)
+        self.highestID += 1
+
     def eventhandler(self, events):
         for event in events:
             # Quit Game
@@ -138,25 +164,36 @@ class GalaxyForge:
             elif event.type == pygame.VIDEORESIZE:
                 self.screen = pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE)
 
+            elif pygame.key.get_pressed()[pygame.K_LCTRL] and event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1 and pygame.mouse.get_pressed()[0]:
+                    if self.control_click != [0, 0]:
+                        self.addPhaseLane(self.control_click, event.pos)
+                    else:
+                        self.control_click = event.pos
+
+
             # Mouse inputs
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                # Middleclick Pressed
+                # Zoom in
                 if event.button == 4:
                     self.scale *= 1.1
+                # zoom out
                 elif event.button == 5:
                     self.scale /= 1.1
+                # check if the pressed button is lmb and if lmb is still being held
                 elif event.button == 1 and pygame.mouse.get_pressed()[0]:
                     # Check for double-click
                     if pygame.time.get_ticks() - self.last_click_time < 500 and self.last_click_pos == event.pos:
                         # Open popup dialogue
                         x, y = self.screen_to_grid(self.last_click_pos)
                         self.PlanetPopup(x, y)
-
+                    # if click was not a doubleclick
                     else:
                         # Store the last click position and time
                         self.last_click_pos = event.pos
                         self.last_click_time = pygame.time.get_ticks()
 
+            # dragging
             elif event.type == pygame.MOUSEMOTION and event.buttons[1]:
                 dx, dy = event.rel
                 self.offset[0] += dx / self.scale
@@ -256,7 +293,6 @@ class GalaxyForge:
                     center=(int((x + self.offset[0]) * self.scale), int((y + self.offset[1]) * self.scale)))
                 self.screen.blit(text, rect)
 
-
         pygame.display.flip()
 
     def PlanetPopup(self, x, y):
@@ -270,8 +306,22 @@ class GalaxyForge:
             if choice == 'cancel':
                 return
             else:
+                # Show input box for user to enter a planet id
+                number_str = easygui.enterbox(msg=f'Enter a planet id (0-{self.highestID}):',
+                                              title='Enter Parent Gravity Well id', default='0')
+                if not number_str:
+                    return
+                try:
+                    number = int(number_str)
+                    if not 0 <= number <= self.highestID:
+                        raise ValueError
+                except ValueError:
+                    easygui.msgbox(msg=f'Invalid id. Please enter a planet id between 0 and {self.highestID}.',
+                                   title='Error')
+                    return
+
                 newID = self.highestID + 1
-                planet = [newID, [x, y], choice, 0]
+                planet = [newID, [x, y], choice, number]
                 appender = JSONAppender(self.galaxy_chart)
                 appender.prepareAppend(planet)
                 self.highestID += 1
@@ -289,6 +339,11 @@ class JSONAppender:
         if 'child_nodes' not in parent_element:
             parent_element['child_nodes'] = []
         parent_element['child_nodes'].append(new_node)
+        with open(self.galaxy_chart, 'w') as f:
+            json.dump(self.data, f, indent=4)
+
+    def appendPhaselane(self, new_node):
+        self.data['phase_lanes'].append(new_node)
         with open(self.galaxy_chart, 'w') as f:
             json.dump(self.data, f, indent=4)
 
