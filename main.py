@@ -366,5 +366,26 @@ class JSONAppender:
         self.append(new_node, parent_node)
 
 
+class ScenarioArchive:
+    def __init__(self, archive_file):
+        self.archive_file = archive_file
 
-gf = GalaxyForge()
+    def extract_files(self, dest_dir):
+        with zipfile.ZipFile(self.archive_file, 'r') as zipf:
+            for member in zipf.infolist():
+                if member.filename.startswith('maps/') and not member.is_dir():
+                    # extract only files from maps directory
+                    member.filename = os.path.basename(member.filename)
+                    zipf.extract(member, dest_dir)
+
+    @staticmethod
+    def create_archive(source_dir, dest_file):
+        with zipfile.ZipFile(dest_file, 'w') as zipf:
+            for root, dirs, files in os.walk(source_dir):
+                for file in files:
+                    zipf.write(os.path.join(root, file), arcname=os.path.relpath(os.path.join(root, file), source_dir))
+
+
+#gf = GalaxyForge()
+
+ScenarioArchive.create_archive("MapFiles", "maps/pre_alpha_medium_custom.scenario")
