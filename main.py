@@ -7,6 +7,9 @@ import easygui
 import math
 
 
+
+
+
 class GalaxyForge:
     def __init__(self):
 
@@ -52,17 +55,13 @@ class GalaxyForge:
         for node in element_0['child_nodes']:
             if node['id'] > self.highestID:
                 self.highestID = node['id']
-                # print(f"{node['id']} > {self.highestID}")
-            # else:
-            # print(f"{node['id']} < {self.highestID}")
-        # print(f"highest id: {self.highestID}")
+            if 'child_nodes' in node:
+                for childNode in node["child_nodes"]:
+                    if childNode['id'] > self.highestID:
+                        self.highestID = childNode['id']
         for node in galaxyChart['phase_lanes']:
             if node['id'] > self.highestID:
                 self.highestID = node['id']
-                # print(f"{node['id']} > {self.highestID}")
-            # else:
-            # print(f"{node['id']} < {self.highestID}")
-        # print(f"highest id: {self.highestID}")
 
     def readPhaseLanes(self):
         # Load JSON data from file
@@ -132,6 +131,7 @@ class GalaxyForge:
                                                      (ICON_SIZE, ICON_SIZE))
         return icons
 
+    #finds theclosest planet to 
     def find_closest_point(self, a, b):
         min_distance = float('inf')
         closest_point = None
@@ -158,6 +158,27 @@ class GalaxyForge:
         self.getHighestID()
         self.phaselanes = self.readPhaseLanes()
         self.planetlist = self.readGalaxyChart()
+
+    def show_context_menu(self,mouse_pos):
+
+        # Define the menu options
+        menu_options = ['Add spaced out sattelites', 'Fuck ya life', 'bing bong']
+
+
+        # Show the context menu
+        choice = easygui.buttonbox('Choose an option:', choices=menu_options, title='Context Menu', default_choice=None,
+                                   cancel_choice='Cancel', image=None)
+
+        # Handle the user's choice
+        if choice == 'Add spaced out sattelites':
+            # Do something for option 1
+            pass
+        elif choice == 'Option 2':
+            # Do something for option 2
+            pass
+        elif choice == 'Option 3':
+            # Do something for option 3
+            pass
 
     def eventhandler(self, events):
         for event in events:
@@ -197,6 +218,11 @@ class GalaxyForge:
                         # Store the last click position and time
                         self.last_click_pos = event.pos
                         self.last_click_time = pygame.time.get_ticks()
+
+                # check if the pressed button is rmb and if rmb is still being held
+                elif event.button == 3 and pygame.mouse.get_pressed()[2]:
+                    mouse_pos = pygame.mouse.get_pos()
+                    self.show_context_menu(mouse_pos)
 
             # dragging
             elif event.type == pygame.MOUSEMOTION and event.buttons[1]:
@@ -303,7 +329,7 @@ class GalaxyForge:
     def PlanetPopup(self, x, y):
         planet_types = ['gas_giant_planet', 'random_home_ice_volcanic_planet', 'random_moon_planet',
                         'random_fair_planet', 'random_poor_planet', 'random_rich_planet',
-                        'random_asteroid_line_cluster', 'player_home_planet', 'random_asteroid']
+                        'random_asteroid_line_cluster', 'player_home_planet', 'random_asteroid', 'lagrange_point_planet', 'random_star']
         title = 'Choose a planet type to add:'
         choice = easygui.choicebox(msg=title, title='Planet Type', choices=planet_types, preselect=0)
 
@@ -340,9 +366,24 @@ class JSONAppender:
             self.data = json.load(f)
         self.galaxy_chart = galaxy_chart
 
+    def isParentRoot(self, parent_id):
+        for node in self.data["root_nodes"]:
+            if node["id"] == parent_id:
+                return True
+
+    def findParent(self, parent_id):
+        for node in self.data["root_nodes"]:
+            for child_node in node['child_nodes']:
+                if child_node["id"] == parent_id:
+                    return child_node
+
+
     def append(self, new_node, parent_id):
         pid = int(parent_id)
-        parent_element = next(node for node in self.data['root_nodes'] if node['id'] == pid)
+        if self.isParentRoot(parent_id):
+            parent_element = next(node for node in self.data['root_nodes'] if node['id'] == pid)
+        else:
+            parent_element = self.findParent(parent_id)
         if 'child_nodes' not in parent_element:
             parent_element['child_nodes'] = []
         parent_element['child_nodes'].append(new_node)
@@ -386,6 +427,7 @@ class ScenarioArchive:
                     zipf.write(os.path.join(root, file), arcname=os.path.relpath(os.path.join(root, file), source_dir))
 
 
-#gf = GalaxyForge()
 
-ScenarioArchive.create_archive("MapFiles", "maps/pre_alpha_medium_custom.scenario")
+gf = GalaxyForge()
+
+ScenarioArchive.create_archive("MapFiles", "maps/3erTest.scenario")

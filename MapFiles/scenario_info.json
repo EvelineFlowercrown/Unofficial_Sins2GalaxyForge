@@ -1,10 +1,10 @@
 {
     "version": 1,
-    "name": "Test",
-    "description": "A Test.",
+    "name": "DreierTest",
+    "description": "Booba.",
     "desired_player_slots_configuration":
     {
-        "player_count": 4,
+        "player_count": 3,
         "team_count": 0
     }
 }

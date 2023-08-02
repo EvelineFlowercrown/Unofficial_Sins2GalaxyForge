@@ -44,5 +44,15 @@
             "npc_filling_type": "faction",
             "npc_id": "miners"
         }
-    }]
+    }],
+    "node_fillings": [
+        {
+            "name": "lagrange_point",
+            "filling":
+            {
+                "editor_color": "D5FF89",
+                "primary_random_fixture_filling_name": "lagrange_point_planet"
+            }
+        }
+    ]
 }
