@@ -7,9 +7,6 @@ import easygui
 import math
 
 
-
-
-
 class GalaxyForge:
     def __init__(self):
 
@@ -131,7 +128,7 @@ class GalaxyForge:
                                                      (ICON_SIZE, ICON_SIZE))
         return icons
 
-    #finds theclosest planet to 
+    # finds theclosest planet to
     def find_closest_point(self, a, b):
         min_distance = float('inf')
         closest_point = None
@@ -159,11 +156,10 @@ class GalaxyForge:
         self.phaselanes = self.readPhaseLanes()
         self.planetlist = self.readGalaxyChart()
 
-    def show_context_menu(self,mouse_pos):
+    def show_context_menu(self, mouse_pos):
 
         # Define the menu options
         menu_options = ['Add spaced out sattelites', 'Fuck ya life', 'bing bong']
-
 
         # Show the context menu
         choice = easygui.buttonbox('Choose an option:', choices=menu_options, title='Context Menu', default_choice=None,
@@ -181,59 +177,54 @@ class GalaxyForge:
             pass
 
     def eventhandler(self, events):
+        handlers = {
+            pygame.QUIT: self.quit,
+            pygame.VIDEORESIZE: self.resize_window,
+            pygame.MOUSEBUTTONDOWN: self.handle_mouse_button_down,
+            pygame.MOUSEMOTION: self.handle_mouse_motion
+        }
+
         for event in events:
-            # Quit Game
-            if event.type == pygame.QUIT:
-                self.running = False
+            handler = handlers.get(event.type)
+            if handler:
+                handler(event)
 
-            # Window Resize
-            elif event.type == pygame.VIDEORESIZE:
-                self.screen = pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE)
+    def quit(self, event):
+        self.running = False
 
-            elif pygame.key.get_pressed()[pygame.K_LCTRL] and event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == 1 and pygame.mouse.get_pressed()[0]:
-                    if self.control_click != [0, 0]:
-                        self.addPhaseLane(self.control_click, event.pos)
-                    else:
-                        self.control_click = event.pos
+    def resize_window(self, event):
+        self.screen = pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE)
 
+    def handle_mouse_button_down(self, event):
+        if pygame.key.get_pressed()[pygame.K_LCTRL] and event.button == 1 and pygame.mouse.get_pressed()[0]:
+            if self.control_click != [0, 0]:
+                self.addPhaseLane(self.control_click, event.pos)
+            else:
+                self.control_click = event.pos
+        elif event.button == 4:
+            self.scale *= 1.1
+        elif event.button == 5:
+            self.scale /= 1.1
+        elif event.button == 1 and pygame.mouse.get_pressed()[0]:
+            if pygame.time.get_ticks() - self.last_click_time < 500 and self.last_click_pos == event.pos:
+                x, y = self.screen_to_grid(self.last_click_pos)
+                self.PlanetPopup(x, y)
+            else:
+                self.last_click_pos = event.pos
+                self.last_click_time = pygame.time.get_ticks()
+        elif event.button == 3 and pygame.mouse.get_pressed()[2]:
+            mouse_pos = pygame.mouse.get_pos()
+            self.show_context_menu(mouse_pos)
 
-            # Mouse inputs
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                # Zoom in
-                if event.button == 4:
-                    self.scale *= 1.1
-                # zoom out
-                elif event.button == 5:
-                    self.scale /= 1.1
-                # check if the pressed button is lmb and if lmb is still being held
-                elif event.button == 1 and pygame.mouse.get_pressed()[0]:
-                    # Check for double-click
-                    if pygame.time.get_ticks() - self.last_click_time < 500 and self.last_click_pos == event.pos:
-                        # Open popup dialogue
-                        x, y = self.screen_to_grid(self.last_click_pos)
-                        self.PlanetPopup(x, y)
-                    # if click was not a doubleclick
-                    else:
-                        # Store the last click position and time
-                        self.last_click_pos = event.pos
-                        self.last_click_time = pygame.time.get_ticks()
+    def handle_mouse_motion(self, event):
+        if event.buttons[1]:
+            dx, dy = event.rel
+            self.offset[0] += dx / self.scale
+            self.offset[1] += dy / self.scale
 
-                # check if the pressed button is rmb and if rmb is still being held
-                elif event.button == 3 and pygame.mouse.get_pressed()[2]:
-                    mouse_pos = pygame.mouse.get_pos()
-                    self.show_context_menu(mouse_pos)
+        mouse_pos = self.screen_to_grid(pygame.mouse.get_pos())
+        self.MousePositionOnGrid = f"Grid: ({mouse_pos[0]:.2f}, {mouse_pos[1]:.2f}) Screen: {pygame.mouse.get_pos()}"
 
-            # dragging
-            elif event.type == pygame.MOUSEMOTION and event.buttons[1]:
-                dx, dy = event.rel
-                self.offset[0] += dx / self.scale
-                self.offset[1] += dy / self.scale
-
-            # MouseMovement
-            elif event.type == pygame.MOUSEMOTION:
-                mouse_pos = self.screen_to_grid(pygame.mouse.get_pos())
-                self.MousePositionOnGrid = f"Grid: ({mouse_pos[0]:.2f}, {mouse_pos[1]:.2f}) Screen: {pygame.mouse.get_pos()}"
 
     def gameLoop(self):
         while self.running:
@@ -329,16 +320,17 @@ class GalaxyForge:
     def PlanetPopup(self, x, y):
         planet_types = ['gas_giant_planet', 'random_home_ice_volcanic_planet', 'random_moon_planet',
                         'random_fair_planet', 'random_poor_planet', 'random_rich_planet',
-                        'random_asteroid_line_cluster', 'player_home_planet', 'random_asteroid', 'lagrange_point_planet', 'random_star']
+                        'random_asteroid_line_cluster', 'player_home_planet', 'random_asteroid',
+                        'lagrange_point_planet', 'random_star']
         title = 'Choose a planet type to add:'
-        choice = easygui.choicebox(msg=title, title='Planet Type', choices=planet_types, preselect=0)
+        planet_type = easygui.choicebox(msg=title, title='Planet Type', choices=planet_types, preselect=0)
 
-        if choice:
-            if choice == 'cancel':
+        if planet_type:
+            if planet_type == 'cancel':
                 return
             else:
-                # Show input box for user to enter a planet id
-                number_str = easygui.enterbox(msg=f'Enter a planet id (0-{self.highestID}):',
+                # Show input box for user to enter a parent id
+                number_str = easygui.enterbox(msg=f'Enter a valid id (0-{self.highestID}):',
                                               title='Enter Parent Gravity Well id', default='0')
                 if not number_str:
                     return
@@ -350,14 +342,16 @@ class GalaxyForge:
                     easygui.msgbox(msg=f'Invalid id. Please enter a planet id between 0 and {self.highestID}.',
                                    title='Error')
                     return
+                self.addPlanet(x, y, planet_type, number)
 
-                newID = self.highestID + 1
-                planet = [newID, [x, y], choice, number]
-                appender = JSONAppender(self.galaxy_chart)
-                appender.prepareAppend(planet)
-                self.getHighestID()
-                self.phaselanes = self.readPhaseLanes()
-                self.planetlist = self.readGalaxyChart()
+    def addPlanet(self, x, y, planettype, parentid):
+        newID = self.highestID + 1
+        planet = [newID, [x, y], planettype, parentid]
+        appender = JSONAppender(self.galaxy_chart)
+        appender.prepareAppend(planet)
+        self.getHighestID()
+        self.phaselanes = self.readPhaseLanes()
+        self.planetlist = self.readGalaxyChart()
 
 
 class JSONAppender:
@@ -376,7 +370,6 @@ class JSONAppender:
             for child_node in node['child_nodes']:
                 if child_node["id"] == parent_id:
                     return child_node
-
 
     def append(self, new_node, parent_id):
         pid = int(parent_id)
@@ -425,7 +418,6 @@ class ScenarioArchive:
             for root, dirs, files in os.walk(source_dir):
                 for file in files:
                     zipf.write(os.path.join(root, file), arcname=os.path.relpath(os.path.join(root, file), source_dir))
-
 
 
 gf = GalaxyForge()

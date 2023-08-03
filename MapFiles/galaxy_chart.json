@@ -13,7 +13,16 @@
             "chance_of_first_planet_bonus": 0.0,
             "chance_of_second_planet_bonus": 0.0,
             "chance_of_retrograde_orbit": 0.5,
-            "child_nodes": []
+            "child_nodes": [
+                {
+                    "id": 1,
+                    "filling_name": "gas_giant_planet",
+                    "position": [
+                        76,
+                        -82
+                    ]
+                }
+            ]
         }
     ],
     "phase_lanes": [],
