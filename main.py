@@ -40,6 +40,9 @@ class GalaxyForge:
         self.control_click = [0, 0]
         self.highestID = 0
 
+        # Selected Entities
+        self.selectedPlanet = ""
+
         # Run the Game
         self.getHighestID()
         self.gameLoop()
@@ -88,7 +91,6 @@ class GalaxyForge:
                 lane[1] = sunPosition
         # Get the id and position of every child node of element 0
         for child_node in element_0['child_nodes']:
-            # print(child_node)
             child_node_id = child_node['id']
             child_node_position = child_node['position']
             child_node_filling_name = child_node['filling_name']
@@ -128,25 +130,26 @@ class GalaxyForge:
                                                      (ICON_SIZE, ICON_SIZE))
         return icons
 
-    # finds theclosest planet to
-    def find_closest_point(self, a, b):
+    # finds the closest planet to where you clicked
+    def find_closest_planet(self, coords):
+        a, b = coords
         min_distance = float('inf')
-        closest_point = None
+        closest_planet = ""
 
         for planet in self.planetlist:
             x, y = planet[1]
             distance = math.sqrt((x - a) ** 2 + (y - b) ** 2)
             if distance < min_distance:
                 min_distance = distance
-                closest_id = planet[0]
+                closest_planet = planet[0]
 
-        return closest_id
+        return closest_planet, min_distance
 
     def addPhaseLane(self, pos1, pos2):
         gridPos1 = self.screen_to_grid(pos1)
         gridPos2 = self.screen_to_grid(pos2)
-        node_a = self.find_closest_point(gridPos1[0], gridPos1[1])
-        node_b = self.find_closest_point(gridPos2[0], gridPos2[1])
+        node_a = self.find_closest_planet(gridPos1)[0]
+        node_b = self.find_closest_planet(gridPos2)[0]
         newID = self.highestID + 1
         new_node = {"id": newID, "node_a": node_a, "node_b": node_b}
         appender = JSONAppender(self.galaxy_chart)
@@ -181,7 +184,8 @@ class GalaxyForge:
             pygame.QUIT: self.quit,
             pygame.VIDEORESIZE: self.resize_window,
             pygame.MOUSEBUTTONDOWN: self.handle_mouse_button_down,
-            pygame.MOUSEMOTION: self.handle_mouse_motion
+            pygame.MOUSEMOTION: self.handle_mouse_motion,
+            pygame.KEYDOWN: self.handle_key_down
         }
 
         for event in events:
@@ -196,25 +200,57 @@ class GalaxyForge:
         self.screen = pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE)
 
     def handle_mouse_button_down(self, event):
-        if pygame.key.get_pressed()[pygame.K_LCTRL] and event.button == 1 and pygame.mouse.get_pressed()[0]:
-            if self.control_click != [0, 0]:
-                self.addPhaseLane(self.control_click, event.pos)
-            else:
-                self.control_click = event.pos
+        # Handle lmb events
+        if event.button == 1:
+            self.handle_left_button_down(event)
+        # Handle rmb events
+        elif event.button == 3:
+            self.handle_right_button_down(event)
+        # Zoom in
         elif event.button == 4:
             self.scale *= 1.1
+        # Zoom out
         elif event.button == 5:
             self.scale /= 1.1
-        elif event.button == 1 and pygame.mouse.get_pressed()[0]:
-            if pygame.time.get_ticks() - self.last_click_time < 500 and self.last_click_pos == event.pos:
-                x, y = self.screen_to_grid(self.last_click_pos)
-                self.PlanetPopup(x, y)
+
+    def handle_left_button_down(self, event):
+        # Wenn gleichzeitig links strg und lmb gedrückt sind
+        if self.isCtrlClick():
+            # wenn schon ein strg click gemacht wurde erstelle eine phaselane zwischen dem letzten und aktuellen klick
+            if self.control_click != [0, 0]:
+                self.addPhaseLane(self.control_click, event.pos)
+            # wenn noch kein strg click gemacht wurde wird der aktuelle gespeichert
             else:
-                self.last_click_pos = event.pos
-                self.last_click_time = pygame.time.get_ticks()
-        elif event.button == 3 and pygame.mouse.get_pressed()[2]:
+                self.control_click = event.pos
+
+        # wenn ein doppelclick gemacht wurde
+        elif self.isDoubleClick(event.pos):
+            x, y = self.screen_to_grid(self.last_click_pos)
+            self.PlanetPopup(x, y)
+        else:
+            planet_id, disance = self.find_closest_planet(self.screen_to_grid(event.pos))
+            if disance <= self.ICON_SIZE * self.scale * 0.5:
+                print("jo?")
+                self.selectedPlanet = str(planet_id)
+            else:
+                self.selectedPlanet = ""
+            self.last_click_pos = event.pos
+            self.last_click_time = pygame.time.get_ticks()
+
+    def handle_right_button_down(self, event):
+        if pygame.mouse.get_pressed()[2]:
             mouse_pos = pygame.mouse.get_pos()
             self.show_context_menu(mouse_pos)
+
+    def handle_key_down(self, event):
+        if event.key == pygame.K_DELETE:
+            self.delete_selected_planet()
+
+    def isDoubleClick(self, pos):
+        return pygame.time.get_ticks() - self.last_click_time < 500 and self.last_click_pos == pos
+
+    def isCtrlClick(self):
+        return pygame.key.get_pressed()[pygame.K_LCTRL] and pygame.mouse.get_pressed()[0]
 
     def handle_mouse_motion(self, event):
         if event.buttons[1]:
@@ -224,7 +260,6 @@ class GalaxyForge:
 
         mouse_pos = self.screen_to_grid(pygame.mouse.get_pos())
         self.MousePositionOnGrid = f"Grid: ({mouse_pos[0]:.2f}, {mouse_pos[1]:.2f}) Screen: {pygame.mouse.get_pos()}"
-
 
     def gameLoop(self):
         while self.running:
@@ -257,6 +292,18 @@ class GalaxyForge:
 
         y = int((y - y00offset - self.offset[1]) / self.scale)
         x = int((x - x00offset - self.offset[0]) / self.scale)
+
+        return x, y
+
+    def gridToScreen(self, grid_pos):
+        x, y = grid_pos
+
+        x00offset = (self.screen.get_width() // 2)
+        y00offset = (self.screen.get_height() // 2)
+
+        x = int(x * self.scale + x00offset + self.offset[0])
+        y = int(y * self.scale + y00offset + self.offset[1])
+
         return x, y
 
     def draw_planetlist(self):
@@ -285,26 +332,36 @@ class GalaxyForge:
             pygame.draw.line(self.screen, OFFWHITE, (startX, startY), (endX, endY), 1)
 
         for planet in self.planetlist:
-            x, y = planet[1]
+            # get the ID
+            planet_id = planet[0]
+            # calculate planet position on sceen
+            x, y = self.gridToScreen(planet[1])
+            # get the name by which to find the icon
             icon_name = planet[2]
-            # parent_node = planet[3]
+            # get icon
             icon = self.icons.get(icon_name, None)
             if icon is not None:
-                # Icon Scaling
-                size = int(self.ICON_SIZE * self.scale)
-                icon = pygame.transform.scale(icon, (size, size))
-
-                # calculate planet position on sceen
-                center = [0, 0]
-
-                center[0] = int(x * self.scale + x00offset + self.offset[0])
-                center[1] = int(y * self.scale + y00offset + self.offset[1])
-
+                # scale icon if zoomed
+                icon = self.scaleIcons(icon)
+                # if planet is selected draw circle around it
+                if str(planet_id) == self.selectedPlanet:
+                    pygame.draw.circle(self.screen, (90, 90, 90), (x, y), 0.4 * (self.ICON_SIZE * self.scale),
+                                       int(3 * self.scale))
                 # get a rectangle centered on the spot the planet should be at
-                rect = icon.get_rect(center=((center[0]), (center[1])))
-
+                rect = icon.get_rect(center=(x, y))
                 # stick the icon on the rectangle
                 self.screen.blit(icon, rect)
+
+                # define the font
+                font = pygame.font.SysFont('Arial', 16)
+                # prepare to render planet_id string in white
+                text = font.render(str(planet_id), True, (255, 255, 255))
+                # get a rectangle the size of the text and put it above the planet
+                text_rect = text.get_rect(center=(x, y - self.ICON_SIZE * self.scale * 0.6))
+                # Stick the text to the rectangle
+                self.screen.blit(text, text_rect)
+
+
             else:
                 size = int(20 * self.scale)
                 pygame.draw.circle(self.screen, GRAY,
@@ -316,6 +373,10 @@ class GalaxyForge:
                 self.screen.blit(text, rect)
 
         pygame.display.flip()
+
+    def scaleIcons(self, icon):
+        size = int(self.ICON_SIZE * self.scale)
+        return pygame.transform.scale(icon, (size, size))
 
     def PlanetPopup(self, x, y):
         planet_types = ['gas_giant_planet', 'random_home_ice_volcanic_planet', 'random_moon_planet',
@@ -352,6 +413,10 @@ class GalaxyForge:
         self.getHighestID()
         self.phaselanes = self.readPhaseLanes()
         self.planetlist = self.readGalaxyChart()
+
+    def delete_selected_planet(self):
+        print("deleded")
+
 
 
 class JSONAppender:

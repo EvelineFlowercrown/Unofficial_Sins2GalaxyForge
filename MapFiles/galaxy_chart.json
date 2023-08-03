@@ -20,6 +20,16 @@
                     "position": [
                         76,
                         -82
+                    ],
+                    "child_nodes": [
+                        {
+                            "id": 2,
+                            "filling_name": "random_moon_planet",
+                            "position": [
+                                45,
+                                -145
+                            ]
+                        }
                     ]
                 }
             ]
