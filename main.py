@@ -230,7 +230,6 @@ class GalaxyForge:
         else:
             planet_id, disance = self.find_closest_planet(self.screen_to_grid(event.pos))
             if disance <= self.ICON_SIZE * self.scale * 0.5:
-                print("jo?")
                 self.selectedPlanet = str(planet_id)
             else:
                 self.selectedPlanet = ""
@@ -415,7 +414,12 @@ class GalaxyForge:
         self.planetlist = self.readGalaxyChart()
 
     def delete_selected_planet(self):
-        print("deleded")
+        appender = JSONAppender(self.galaxy_chart)
+        appender.deleteNode(self.selectedPlanet)
+        self.selectedPlanet = ""
+        self.getHighestID()
+        self.phaselanes = self.readPhaseLanes()
+        self.planetlist = self.readGalaxyChart()
 
 
 
@@ -463,6 +467,22 @@ class JSONAppender:
         new_node = {"id": planetId, "filling_name": filling_name, "position": position}
         print(f"Adding new node: {new_node}")
         self.append(new_node, parent_node)
+
+    def deleteNode(self, planet_id):
+        parent_element = next(node for node in self.data['root_nodes'] if node['id'] == 0)
+        if 'child_nodes' in parent_element:
+            for child_node in parent_element['child_nodes']:
+                if str(child_node['id']) == str(planet_id):
+                    # Remove the child node from the parent node
+                    parent_element['child_nodes'].remove(child_node)
+                if 'child_nodes' in child_node:
+                    for grandchild_node in child_node['child_nodes']:
+                        if str(grandchild_node['id']) == str(planet_id):
+                            # Remove the child node from the parent node
+                            child_node['child_nodes'].remove(grandchild_node)
+                            # Dump the modified object back into JSON format
+        with open(self.galaxy_chart, 'w') as f:
+            json.dump(self.data, f, indent=4)
 
 
 class ScenarioArchive:

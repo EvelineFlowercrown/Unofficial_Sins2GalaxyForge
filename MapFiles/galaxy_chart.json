@@ -15,26 +15,45 @@
             "chance_of_retrograde_orbit": 0.5,
             "child_nodes": [
                 {
-                    "id": 1,
+                    "id": 2,
                     "filling_name": "gas_giant_planet",
                     "position": [
-                        76,
-                        -82
-                    ],
-                    "child_nodes": [
-                        {
-                            "id": 2,
-                            "filling_name": "random_moon_planet",
-                            "position": [
-                                45,
-                                -145
-                            ]
-                        }
+                        108,
+                        -163
+                    ]
+                },
+                {
+                    "id": 5,
+                    "filling_name": "gas_giant_planet",
+                    "position": [
+                        262,
+                        132
                     ]
                 }
             ]
         }
     ],
-    "phase_lanes": [],
+    "phase_lanes": [
+        {
+            "id": 6,
+            "node_a": 0,
+            "node_b": 3
+        },
+        {
+            "id": 7,
+            "node_a": 0,
+            "node_b": 5
+        },
+        {
+            "id": 8,
+            "node_a": 0,
+            "node_b": 2
+        },
+        {
+            "id": 9,
+            "node_a": 2,
+            "node_b": 3
+        }
+    ],
     "recommended_team_count": 1
 }
