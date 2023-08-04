@@ -469,6 +469,7 @@ class JSONAppender:
         self.append(new_node, parent_node)
 
     def deleteNode(self, planet_id):
+        self.deletePhaseLanes(planet_id)
         parent_element = next(node for node in self.data['root_nodes'] if node['id'] == 0)
         if 'child_nodes' in parent_element:
             for child_node in parent_element['child_nodes']:
@@ -480,9 +481,14 @@ class JSONAppender:
                         if str(grandchild_node['id']) == str(planet_id):
                             # Remove the child node from the parent node
                             child_node['child_nodes'].remove(grandchild_node)
-                            # Dump the modified object back into JSON format
+        # Dump the modified object back into JSON format
         with open(self.galaxy_chart, 'w') as f:
             json.dump(self.data, f, indent=4)
+
+    def deletePhaseLanes(self, planet_id):
+        for phaselane in self.data['phase_lanes']:
+            if str(phaselane['node_a']) == str(planet_id) or str(phaselane['node_b']) == str(planet_id):
+                self.data['phase_lanes'].remove(phaselane)
 
 
 class ScenarioArchive:

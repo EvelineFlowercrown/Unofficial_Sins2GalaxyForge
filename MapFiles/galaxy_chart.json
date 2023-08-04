@@ -13,47 +13,9 @@
             "chance_of_first_planet_bonus": 0.0,
             "chance_of_second_planet_bonus": 0.0,
             "chance_of_retrograde_orbit": 0.5,
-            "child_nodes": [
-                {
-                    "id": 2,
-                    "filling_name": "gas_giant_planet",
-                    "position": [
-                        108,
-                        -163
-                    ]
-                },
-                {
-                    "id": 5,
-                    "filling_name": "gas_giant_planet",
-                    "position": [
-                        262,
-                        132
-                    ]
-                }
-            ]
+            "child_nodes": []
         }
     ],
-    "phase_lanes": [
-        {
-            "id": 6,
-            "node_a": 0,
-            "node_b": 3
-        },
-        {
-            "id": 7,
-            "node_a": 0,
-            "node_b": 5
-        },
-        {
-            "id": 8,
-            "node_a": 0,
-            "node_b": 2
-        },
-        {
-            "id": 9,
-            "node_a": 2,
-            "node_b": 3
-        }
-    ],
+    "phase_lanes": [],
     "recommended_team_count": 1
 }
